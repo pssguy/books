@@ -2,7 +2,7 @@
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
-    vertical_layout: fill
+    vertical_layout: scroll
     social: [ menu ]
     source_code: embed
 runtime: shiny    
@@ -17,6 +17,7 @@ library(purrr)
 library(plotly)
 library(tidyr)
 library(readr)
+library(DT)
 library(dplyr)
 
 # recalculate 
@@ -25,11 +26,15 @@ library(dplyr)
 
 videos <- read_csv("videos.csv")
 
+#  deployApp(appName="user2016FlexDB", account="mytinyshinys") needed
 
 ```
 
 Cumulative
 ===================================== 
+
+Row
+-----------------------------------------------------------------------
 
 
 ``` {r}
@@ -39,8 +44,62 @@ renderPlotly({
  videos %>%
    arrange(desc(views)) %>%
    mutate(cumViews=cumsum(views),rank=row_number(),pc=100*cumViews/max(cumViews))  %>%
-   plot_ly(x=rank,y=pc,mode="markers+lines")
+   plot_ly(x=rank,y=pc,mode="markers+lines") %>% 
+    layout(title="Cumulative Distribution of Video Viewings",
+                 xaxis=list(title="Videos"),
+                 yaxis=list(title="% of Total Views"),
+                 margin=list(b=70)) %>%
+   config(displayModeBar = F,showLink = F)
 
 })
+
+```
+
+
+All
+===================================== 
+
+Column
+-----------------------------------------------------------------------
+
+
+``` {r}
+
+# renderPlotly({
+# 
+#  videos %>% 
+#    arrange(views) %>% 
+#    plot_ly(x=views,y=speakers,mode="markers") %>% 
+#     layout(title="Viewings by Speaker (some gave 2 talks)",
+#                  xaxis=list(title="Viewings"),
+#                  yaxis=list(title=""),
+#                  margin=list(b=70,l=130)) %>%
+#    config(displayModeBar = F,showLink = F)
+# 
+# })
+
+output$table <-DT::renderDataTable({
+  
+  videos %>% 
+    arrange(desc(views)) %>%
+    mutate(title=str_replace_all(link,"-"," ")) %>% 
+    select(speaker=speakers,title,views) %>% 
+                         DT::datatable(rownames=TRUE,selection='single',class='compact stripe hover row-border order-column',options= list(paging = TRUE, searching = TRUE,info=FALSE))
+  
+})
+  DT::dataTableOutput("table")
+  
+#   renderUI ({
+#    if(is.null(input$hthTable_rows_selected)) return()
+#   
+#   s = as.integer(input$hthTable_rows_selected)
+# #   print(input$hthTable_selected) #1 so it is row
+# #   
+# #   s = input$hthTable_selected
+#   print(s)
+#   print(glimpse(info()$tbl))
+#   team <- info()$tbl[s,]$Opponents
+#   
+#   })
 
 ```
